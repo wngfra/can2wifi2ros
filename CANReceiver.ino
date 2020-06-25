@@ -1,9 +1,26 @@
 #include <CAN.h>
-
 #define CS_PIN 3
 #define INT_PIN 7
 
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include <WiFiUdp.h>
+
+#include "arduino_secrets.h"
+///////please enter your sensitive data in the Secret tab/arduino_secrets.h
+char ssid[] = SECRET_SSID; // your network SSID (name)
+char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key for WEP)
+
+int status = WL_IDLE_STATUS;
+unsigned int localPort = 2390;  // local port to listen on
+unsigned int remotePort = 50100; // remote port to send packets
+IPAddress remoteIp = IPAddress(10, 186, 15, 52);
+
+WiFiUDP Udp;
+
 const unsigned char CH_ORD[16] = {11, 15, 14, 12, 9, 13, 8, 10, 6, 7, 4, 5, 2, 0, 3, 1};
+
+char packetBuf[64];            //buffer to hold sensor message
 
 int rxId = 0;
 int rxVal[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -11,14 +28,44 @@ unsigned char count = 0;
 unsigned char id;
 unsigned char packetSize;
 unsigned char rxBuf[8];
+unsigned char rxMsg[32];
+
 
 void setup()
 {
+
   Serial.begin(115200);
   while (!Serial)
     ;
 
-  Serial.println("CAN Receiver");
+  // check for the WiFi module:
+  if (WiFi.status() == WL_NO_MODULE)
+  {
+    Serial.println("Communication with WiFi module failed!");
+    // don't continue
+    while (true)
+      ;
+  }
+
+  // attempt to connect to Wifi network:
+  while (status != WL_CONNECTED)
+  {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+    status = WiFi.begin(ssid, pass);
+
+    // wait 3 seconds for connection:
+    delay(3000);
+  }
+  Serial.println("Connected to wifi");
+  Udp.begin(localPort);
+
+  // print your board's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
   CAN.setPins(CS_PIN, INT_PIN);
 
   // Set filters
@@ -33,28 +80,44 @@ void setup()
   }
 }
 
-void bytes2int(unsigned char id)
+// Decode CAN message from bytes to int arrays
+inline void bytes2int(unsigned char id)
 {
+  // Read CAN buffer to local buffer
   for (int i = 0; i < 8; ++i)
   {
     rxBuf[i] = CAN.read();
   }
 
+  // Rearrange by the sequential taxel order
   for (int j = 0; j < 4; ++j)
   {
     rxVal[CH_ORD[id + j]] = (int)(rxBuf[2 * j + 1] << 8) + (int)(rxBuf[2 * j]);
   }
 
-  if (id == 12)
+  // Prepare UDP message
+  for (int k = 0; k < 16; ++k)
   {
-    Serial.print("CAN read: ");
-    for (int k = 0; k < 16; ++k)
-    {
-      Serial.print(rxVal[k]);
-      Serial.print(" ");
-    }
-    Serial.println();
+    rxMsg[k * 2] = rxVal[k] >> 8;
+    rxMsg[k * 2 + 1] = rxVal[k] & 0xFF;
   }
+
+  Serial.print("Message is: ");
+  for (int i = 0; i < 32; ++i)
+  {
+    Serial.print(rxMsg[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+}
+
+void publish()
+{
+  Serial.println("Send by UDP...");
+
+  Udp.beginPacket(remoteIp, remotePort);
+  Udp.write((char *)rxMsg);
+  Udp.endPacket();
 }
 
 void loop()
