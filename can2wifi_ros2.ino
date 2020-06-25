@@ -15,7 +15,7 @@ char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key 
 int status = WL_IDLE_STATUS;
 unsigned int localPort = 2390; // local port to listen on
 unsigned int remotePort = 10240;
-IPAddress remoteIp = IPAddress(192, 168, 1, 156);
+IPAddress remoteIp = IPAddress(192, 168, 137, 22);
 
 WiFiUDP Udp;
 
@@ -31,7 +31,6 @@ unsigned char txMsg[33];
 
 void setup()
 {
-
   Serial.begin(115200);
   while (!Serial)
     ;
@@ -51,12 +50,13 @@ void setup()
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+
     status = WiFi.begin(ssid, pass);
 
     // wait 3 seconds for connection:
     delay(3000);
   }
-  Serial.println("Connected to wifi");
+  // Serial.println("Connected to wifi");
   Udp.begin(localPort);
 
   // print your board's IP address:
@@ -71,10 +71,8 @@ void setup()
 
   // Start the CAN bus at 1 Mbps
   while (!CAN.begin(1000E3))
-  {
-    Serial.println("Starting CAN failed!");
-  }
-  Serial.println("CAN started!");
+    ;
+  // Serial.println("CAN started!");
 }
 
 // Decode CAN message from bytes to int arrays
