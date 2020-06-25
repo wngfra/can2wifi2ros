@@ -13,8 +13,8 @@ char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key 
 
 int status = WL_IDLE_STATUS;
 unsigned int localPort = 2390;  // local port to listen on
-unsigned int remotePort = 50100; // remote port to send packets
-IPAddress remoteIp = IPAddress(10, 186, 15, 52);
+unsigned int remotePort = 10240;
+IPAddress remoteIp = IPAddress(192, 168, 0, 100);
 
 WiFiUDP Udp;
 
@@ -72,12 +72,19 @@ void setup()
   CAN.filter(0x400, 0x7f0);
 
   // Start the CAN bus at 1 Mbps
-  if (!CAN.begin(1000E3))
+  while (!CAN.begin(1000E3))
   {
     Serial.println("Starting CAN failed!");
-    while (1)
-      ;
   }
+
+  /*
+    Serial.println("Waiting for activating msg...");
+    while (!Udp.parsePacket())
+    ;
+    remoteIp = Udp.remoteIP();
+    remotePort = Udp.remotePort();
+    Serial.println("UDP channel activated!");
+  */
 }
 
 // Decode CAN message from bytes to int arrays
@@ -94,29 +101,21 @@ inline void bytes2int(unsigned char id)
   {
     rxVal[CH_ORD[id + j]] = (int)(rxBuf[2 * j + 1] << 8) + (int)(rxBuf[2 * j]);
   }
+}
 
-  // Prepare UDP message
-  for (int k = 0; k < 16; ++k)
-  {
-    rxMsg[k * 2] = rxVal[k] >> 8;
-    rxMsg[k * 2 + 1] = rxVal[k] & 0xFF;
-  }
-
-  Serial.print("Message is: ");
+void publishMsg(unsigned char *msg)
+{
+  Serial.print("Sent: ");
   for (int i = 0; i < 32; ++i)
   {
-    Serial.print(rxMsg[i], HEX);
+    Serial.print(msg[i]);
     Serial.print(" ");
   }
   Serial.println();
-}
-
-void publish()
-{
-  Serial.println("Send by UDP...");
 
   Udp.beginPacket(remoteIp, remotePort);
-  Udp.write((char *)rxMsg);
+  delay(30);
+  Udp.write((char *)msg);
   Udp.endPacket();
 }
 
@@ -153,6 +152,15 @@ void loop()
         id = 12;
         count = 0;
         bytes2int(id);
+
+        // Prepare UDP message
+        for (int k = 0; k < 16; ++k)
+        {
+          rxMsg[k * 2] = rxVal[k] >> 8;
+          rxMsg[k * 2 + 1] = rxVal[k] & 0xFF;
+        }
+
+        publishMsg(rxMsg);
       }
     }
   }

@@ -33,3 +33,7 @@
 
 # Arduino
 arduino_secrets.h
+
+# vscode
+.vscode
+.vscode-insiders
