@@ -8,3 +8,6 @@ Arduino CAN-to-WiFi via ROS2 project
 ## Hardware
 * (Arduino MKR Wifi 1010)[https://store.arduino.cc/arduino-mkr-wifi-1010]
 * (Arduino MKR CAN Shield)[https://store.arduino.cc/arduino-mkr-can-shield]
+
+## TODO
+* Publish messags to ROS2 via DDS, currently only sending message to a specific ip via UDP
