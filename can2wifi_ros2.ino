@@ -1,4 +1,5 @@
 #include <CAN.h>
+
 #define CS_PIN 3
 #define INT_PIN 7
 
@@ -12,24 +13,21 @@ char ssid[] = SECRET_SSID; // your network SSID (name)
 char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key for WEP)
 
 int status = WL_IDLE_STATUS;
-unsigned int localPort = 2390;  // local port to listen on
+unsigned int localPort = 2390; // local port to listen on
 unsigned int remotePort = 10240;
-IPAddress remoteIp = IPAddress(192, 168, 0, 100);
+IPAddress remoteIp = IPAddress(192, 168, 1, 156);
 
 WiFiUDP Udp;
 
 const unsigned char CH_ORD[16] = {11, 15, 14, 12, 9, 13, 8, 10, 6, 7, 4, 5, 2, 0, 3, 1};
 
-char packetBuf[64];            //buffer to hold sensor message
+char packetBuf[64]; //buffer to hold sensor message
 
 int rxId = 0;
-int rxVal[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 unsigned char count = 0;
 unsigned char id;
-unsigned char packetSize;
 unsigned char rxBuf[8];
-unsigned char rxMsg[32];
-
+unsigned char txMsg[33];
 
 void setup()
 {
@@ -76,15 +74,7 @@ void setup()
   {
     Serial.println("Starting CAN failed!");
   }
-
-  /*
-    Serial.println("Waiting for activating msg...");
-    while (!Udp.parsePacket())
-    ;
-    remoteIp = Udp.remoteIP();
-    remotePort = Udp.remotePort();
-    Serial.println("UDP channel activated!");
-  */
+  Serial.println("CAN started!");
 }
 
 // Decode CAN message from bytes to int arrays
@@ -99,7 +89,8 @@ inline void bytes2int(unsigned char id)
   // Rearrange by the sequential taxel order
   for (int j = 0; j < 4; ++j)
   {
-    rxVal[CH_ORD[id + j]] = (int)(rxBuf[2 * j + 1] << 8) + (int)(rxBuf[2 * j]);
+    txMsg[CH_ORD[id + j] * 2] = rxBuf[2 * j + 1];
+    txMsg[CH_ORD[id + j] * 2 + 1] = rxBuf[2 * j];
   }
 }
 
@@ -114,7 +105,6 @@ void publishMsg(unsigned char *msg)
   Serial.println();
 
   Udp.beginPacket(remoteIp, remotePort);
-  delay(30);
   Udp.write((char *)msg);
   Udp.endPacket();
 }
@@ -124,11 +114,9 @@ void loop()
   while (count < 4)
   {
     // try to parse packet
-    packetSize = CAN.parsePacket();
-    rxId = CAN.packetId();
-
-    if (packetSize == 8)
+    if (CAN.parsePacket() == 8)
     {
+      rxId = CAN.packetId();
       if (rxId == 0x405 && count == 0)
       {
         id = 0;
@@ -153,14 +141,8 @@ void loop()
         count = 0;
         bytes2int(id);
 
-        // Prepare UDP message
-        for (int k = 0; k < 16; ++k)
-        {
-          rxMsg[k * 2] = rxVal[k] >> 8;
-          rxMsg[k * 2 + 1] = rxVal[k] & 0xFF;
-        }
-
-        publishMsg(rxMsg);
+        txMsg[32] = '\0';
+        publishMsg(txMsg);
       }
     }
   }

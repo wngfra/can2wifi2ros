@@ -1,2 +1,2 @@
-#define SECRET_SSID "dlink"
+#define SECRET_SSID ""
 #define SECRET_PASS ""
