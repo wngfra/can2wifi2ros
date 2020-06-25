@@ -1,0 +1,2 @@
+#define SECRET_SSID "WebCube4-1DAD"
+#define SECRET_PASS "8H6RHJXB"
