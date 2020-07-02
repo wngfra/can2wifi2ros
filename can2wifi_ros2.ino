@@ -15,7 +15,7 @@ char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key 
 int status = WL_IDLE_STATUS;
 unsigned int localPort = 2390; // local port to listen on
 unsigned int remotePort = 10240;
-IPAddress remoteIp = IPAddress(192, 168, 137, 22);
+IPAddress remoteIp = IPAddress(192, 168, 0, 100);
 
 WiFiUDP Udp;
 
@@ -30,15 +30,17 @@ unsigned char rxBuf[8];
 unsigned char txMsg[33];
 
 void setup()
-{
+{ 
+  /*
   Serial.begin(115200);
   while (!Serial)
     ;
+  */
 
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE)
   {
-    Serial.println("Communication with WiFi module failed!");
+    // Serial.println("Communication with WiFi module failed!");
     // don't continue
     while (true)
       ;
@@ -47,8 +49,8 @@ void setup()
   // attempt to connect to Wifi network:
   while (status != WL_CONNECTED)
   {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
+    // Serial.print("Attempting to connect to SSID: ");
+    // Serial.println(ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
 
     status = WiFi.begin(ssid, pass);
@@ -61,8 +63,8 @@ void setup()
 
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
+  // Serial.print("IP Address: ");
+  // Serial.println(ip);
 
   CAN.setPins(CS_PIN, INT_PIN);
 
@@ -94,6 +96,7 @@ inline void bytes2int(unsigned char id)
 
 void publishMsg(unsigned char *msg)
 {
+  /*
   Serial.print("Sent: ");
   for (int i = 0; i < 32; ++i)
   {
@@ -101,6 +104,7 @@ void publishMsg(unsigned char *msg)
     Serial.print(" ");
   }
   Serial.println();
+  */
 
   Udp.beginPacket(remoteIp, remotePort);
   Udp.write((char *)msg);
