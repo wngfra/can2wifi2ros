@@ -3,7 +3,6 @@ Arduino CAN-to-WiFi via ROS2 project
 
 ## Dependencies
 * (Arduino CAN)[https://github.com/sandeepmistry/arduino-CAN]
-* (ros2arduino)[https://github.com/ROBOTIS-GIT/ros2arduino]
 * WiFiNINA
 
 ## Hardware
@@ -13,6 +12,7 @@ Arduino CAN-to-WiFi via ROS2 project
 ## Notes
 * Default client ip is `192.168.0.100:10240`, communicated via `UDP`
 * In `python` folder there is a testing python script to print out the messages heard at the port
+* Copy `can_wifi` and  `tactile_msg` to your ros2 workspace `src` directory and compile
 
-## TODO
-* Publish messags to ROS2 via DDS, currently only sending message to a specific ip via UDP
+## Todo
+* Add ros2 launch file to pass arguments all at once 
