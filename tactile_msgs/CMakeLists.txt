@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(tactile_msg)
+project(tactile_msgs)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -20,6 +20,7 @@ find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 find_package(rosidl_default_generators REQUIRED)
+find_package(std_msgs REQUIRED)
 
 set(msg_files
   "msg/TactileSignal.msg"
@@ -27,6 +28,7 @@ set(msg_files
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+  DEPENDENCIES std_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)
