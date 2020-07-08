@@ -34,7 +34,7 @@ class TactileSignalPublisher(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         data, addr = self.sock.recvfrom(1024)
         msg.addr = addr[0] + ":" + str(addr[1])
-        msg.data = values = [int.from_bytes(
+        msg.data = [int.from_bytes(
             data[i:i+2], 'big', signed=False) for i in range(0, len(data), 2)]
         self.publisher_.publish(msg)
 
