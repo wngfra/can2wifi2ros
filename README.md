@@ -1,4 +1,4 @@
-# can2wifi_ros2
+# can2wifi2ros
 Arduino CAN-to-WiFi via ROS2 project
 
 ## Dependencies
@@ -13,6 +13,3 @@ Arduino CAN-to-WiFi via ROS2 project
 * Default client ip is `192.168.0.100:10240`, communicated via `UDP`
 * In `python` folder there is a testing python script to print out the messages heard at the port
 * Copy `can_wifi` and  `tactile_msg` to your ros2 workspace `src` directory and compile
-
-## Todo
-* Add ros2 launch file to pass arguments all at once 
