@@ -44,12 +44,9 @@ class TactileSignalPublisher(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-
     pub = TactileSignalPublisher()
-
     rclpy.spin(pub)
-
-    # pub.destroy_node()
+    ub.destroy_node()
     rclpy.shutdown()
 
 

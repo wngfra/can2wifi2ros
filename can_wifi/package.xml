@@ -2,8 +2,8 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>can_wifi</name>
-  <version>0.1.0</version>
-  <description>Receive tactile signals via UDP and publish to ROS2 network</description>
+  <version>0.2.0</version>
+  <description>A ROS2 publisher for CAN2Wifi Arduino module</description>
   <maintainer email="wngfra@gmail.com">root</maintainer>
   <license>Apache License 2.0</license>
 

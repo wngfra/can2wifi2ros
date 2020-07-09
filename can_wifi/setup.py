@@ -4,7 +4,7 @@ package_name = 'can_wifi'
 
 setup(
     name=package_name,
-    version='0.1.0',
+    version='0.2.0',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='root',
     maintainer_email='wngfra@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='A ROS2 publisher for CAN2Wifi Arduino module',
+    license='Apache-2.0 License ',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
