@@ -11,5 +11,7 @@ A ROS2 package for CAN2Wifi Arduino module
 
 ## Notes
 * Default client ip is `192.168.0.100:10240`, communicated via `UDP`
-* In `python` folder there is a testing python script to print out the messages heard at the port
 * (CPM-Finger)[https://www.cyskin.com/cpm-finger-the-finger-for-textile-manipulation/] decoder is embedded into the Arduino codes; correct taxel order is also presented
+
+## TODO
+* `test` to be implemented (maybe never...)
