@@ -18,7 +18,7 @@ class TactileSignalPublisher(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
-                ('ip', "192.168.0.100"),
+                ('ip', "0.0.0.0"),
                 ('port', 10240)
             ]
         )
@@ -36,10 +36,13 @@ class TactileSignalPublisher(Node):
         msg.header.frame_id = 'world'
         msg.header.stamp = self.get_clock().now().to_msg()
         data, addr = self.sock.recvfrom(1024)
-        msg.addr = addr[0] + ":" + str(addr[1])
-        msg.data = [int.from_bytes(
-            data[i:i+2], 'big', signed=False) for i in range(0, len(data), 2)]
-        self.publisher_.publish(msg)
+        try:
+            msg.addr = addr[0] + ":" + str(addr[1])
+            msg.data = [int.from_bytes(
+                data[i:i+2], 'big', signed=False) for i in range(0, len(data), 2)]
+            self.publisher_.publish(msg)
+        except:
+            self.get_logger().error("Error tactile data: incorrect array length or overflow.")
 
 
 def main(args=None):
