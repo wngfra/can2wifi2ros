@@ -1,4 +1,3 @@
-string node_name
 uint32 transition 
 ---
 bool success
