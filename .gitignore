@@ -31,8 +31,9 @@
 *.out
 *.app
 
-# Arduino
-arduino_secrets.h
+#python
+*.pyc
+__pycache__
 
 # vscode
 .vscode
