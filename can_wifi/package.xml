@@ -8,6 +8,7 @@
   <license>Apache License 2.0</license>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>rclpy_lifecycle</exec_depend>
   <exec_depend>tactile_msg</exec_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
 
