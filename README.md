@@ -1,6 +1,10 @@
 # can2wifi2ros
 A ROS2 package for CAN2Wifi Arduino module
 
+## Features
+* Receives raw data of CPM-finger via UDP in bytes and publishes converted integer array to ROS2 network
+* Runtime node state switch is implemented via ROS2 service/client model; available states are listed in the node classs constructor
+
 ## Dependencies
 * (Arduino CAN)[https://github.com/sandeepmistry/arduino-CAN]
 * WiFiNINA
@@ -14,4 +18,5 @@ A ROS2 package for CAN2Wifi Arduino module
 * (CPM-Finger)[https://www.cyskin.com/cpm-finger-the-finger-for-textile-manipulation/] decoder is embedded into the Arduino codes; correct taxel order is also presented
 
 ## TODO
+* Runtime parameter change via ROS2 parameter server
 * `test` to be implemented (maybe never...)

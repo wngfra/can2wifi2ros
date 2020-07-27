@@ -3,8 +3,6 @@
 
 from collections import deque
 import socket
-import sys
-
 
 import numpy as np
 import rclpy
@@ -14,67 +12,100 @@ from tactile_msgs.msg import TactileSignal
 from tactile_msgs.srv import ChangeState
 
 
+_STATE_LIST = [0, 1]
+"""
+_STATE_LIST lists available node states.
+Node States
+----------------------------------------
+0: Calibration state (publish no data)
+1: Recording state (publish data)
+"""
+
+
 class TactileSignalPublisher(Node):
+    """
+    A node class for tactile signal publisher.
+    The node receives tactile signals in bytes via UDP and converts the data to array and publish to ROS2 network.
+    Runtime node state switch is implemented.
+    """
 
     def __init__(self):
         super().__init__('tactile_publisher')
+
+        # Parameters are set via ROS2 parameter server.
 
         self.declare_parameters(
             namespace='',
             parameters=[
                 ('ip', "0.0.0.0"),
-                ('port', 10240)
+                ('port', 10240),
+                ('calibration_size', 30)
             ]
         )
-        (ip, port) = self.get_parameters(['ip', 'port'])
+        ip = self.get_parameter('ip').get_parameter_value().string_value
+        port = self.get_parameter('port').get_parameter_value().integer_value
+        calibration_size = self.get_parameter(
+            'calibration_size').get_parameter_value().integer_value
 
-        self.sock_ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock_.bind((str(ip.value), int(port.value)))
+        self.__sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.__sock.bind((ip, port))
 
-        self.state_ = 0
-        self.calibration_queue_ = deque(maxlen=30) # Number of samples used for calibration
-        self.reference_values_ = np.zeros(16)
+        self.__state = 0
 
-        self.publisher_ = self.create_publisher(
+        # Queue of data for calibration
+        self.__calibration_queue = deque(maxlen=calibration_size)
+        self.__reference_value = np.zeros(16)
+
+        self.__publisher = self.create_publisher(
             TactileSignal, '/tactile_signals', 10)
-        self.srv_ = self.create_service(
-            ChangeState, '/tactile_publisher/change_state', self.change_state_callback)
+        self.__srv = self.create_service(
+            ChangeState, '/tactile_publisher/change_state', self.change___statecallback)
 
         # Publisher rate 0.03s
-        self.timer_ = self.create_timer(0.03, self.timer_callback)
+        self.__timer = self.create_timer(0.03, self.timer_callback)
 
     def timer_callback(self):
-        data, addr = self.sock_.recvfrom(1024)
-        values = [int.from_bytes(data[i:i+2], 'big', signed=False) for i in range(0, len(data), 2)]
+        data, addr = self.__sock.recvfrom(1024)
+        values = [int.from_bytes(data[i:i+2], 'big', signed=False)
+                  for i in range(0, len(data), 2)]
 
-        if self.state_ == 1 and len(self.calibration_queue_) == self.calibration_queue_.maxlen:
-            self.reference_values_ = np.average(self.calibration_queue_, axis=0)
+        if self.__state == 1:  # Recording state
+            if len(self.__calibration_queue) == self.__calibration_queue.maxlen:
+                self.__reference_value = np.average(
+                    self.__calibration_queue, axis=0)
 
-            msg = TactileSignal()
-            msg.header.frame_id = 'world'
-            msg.header.stamp = self.get_clock().now().to_msg()
-            try:
-                msg.addr = addr[0] + ":" + str(addr[1])
-                msg.data = np.array(values, dtype=np.int32) - self.reference_values_.astype(np.int32)
-                self.publisher_.publish(msg)
-            except:
-                self.get_logger().error("Error tactile data: incorrect array length or overflow.")
-        elif self.state_ == 0:
+                msg = TactileSignal()
+                msg.header.frame_id = 'world'
+                msg.header.stamp = self.get_clock().now().to_msg()
+                try:
+                    msg.addr = addr[0] + ":" + str(addr[1])
+                    msg.data = np.array(values, dtype=np.int32) - self.__reference_value.astype(np.int32)
+                    self.__publisher.publish(msg)
+                except Exception as error:
+                    self.get_logger().error(str(error))
+            else:
+                self.get_logger().error("Uncalibrated sensor!")
+                raise Exception("Calibration queue is not filled.")
+        elif self.__state == 0:  # Calibration state
             if len(values) == 16:
-                self.calibration_queue_.append(values)
-        else:
-            self.get_logger().error("Unknown state or uncalibrated sensor!")
+                self.__calibration_queue.append(values)
 
-    def change_state_callback(self, request, response):
-        if request.transition != self.state_:
+    def change___statecallback(self, request, response):
+        if request.transition != self.__state:
             try:
-                self.state_ = request.transition
+                if request.transition in _STATE_LIST:
+                    self.__state = request.transition
 
-                response.success = True
-                response.info = "OK"
-            except:
+                    response.success = True
+                    response.info = "OK"
+                else:
+                    raise Exception("Undefined state")
+            except Exception as error:
                 response.success = False
-                response.info = "Undefined state!"
+                response.info = str(error)
+
+                self.get_logger().error("Wrong transition! Reverting to calibration state...")
+                self.__state = 0
         else:
             response.success = True
             response.info = "No transition needed!"
