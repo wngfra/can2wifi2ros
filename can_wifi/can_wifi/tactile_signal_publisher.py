@@ -12,7 +12,10 @@ from tactile_msgs.msg import TactileSignal
 from tactile_msgs.srv import ChangeState
 
 
-_STATE_LIST = [0, 1]
+_STATE_LIST = {
+    0: 'calibration',
+    1: 'recording'
+}
 """
 _STATE_LIST lists available node states.
 Node States
@@ -20,6 +23,8 @@ Node States
 0: Calibration state (publish no data)
 1: Recording state (publish data)
 """
+
+
 
 
 class TactileSignalPublisher(Node):
@@ -93,22 +98,26 @@ class TactileSignalPublisher(Node):
     def change___statecallback(self, request, response):
         if request.transition != self.__state:
             try:
-                if request.transition in _STATE_LIST:
+                if request.transition in _STATE_LIST.keys():
                     self.__state = request.transition
 
                     response.success = True
                     response.info = "OK"
+
+                    self.get_logger().info("Changed to state: {}".format(_STATE_LIST[self.__state]))
                 else:
                     raise Exception("Undefined state")
             except Exception as error:
                 response.success = False
                 response.info = str(error)
 
-                self.get_logger().error("Wrong transition! Reverting to calibration state...")
+                self.get_logger().error("Wrong transition! Reverting to state: calibration")
                 self.__state = 0
         else:
             response.success = True
             response.info = "No transition needed!"
+
+            self.get_logger().info("In state: {}".format(_STATE_LIST[self.__state]))
 
         return response
 
