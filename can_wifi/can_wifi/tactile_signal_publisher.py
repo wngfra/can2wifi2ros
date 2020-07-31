@@ -69,6 +69,8 @@ class TactileSignalPublisher(Node):
         # Publisher rate 0.03s
         self.__timer = self.create_timer(0.03, self.timer_callback)
 
+        self.get_logger().info('Node started in state: calibration')
+
     def timer_callback(self):
         data, addr = self.__sock.recvfrom(1024)
         values = [int.from_bytes(data[i:i+2], 'big', signed=False)
