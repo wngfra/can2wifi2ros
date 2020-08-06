@@ -4,7 +4,7 @@
   <name>tactile_msgs</name>
   <version>0.1.0</version>
   <description>Custom tactile signal message types</description>
-  <maintainer email="wngfra@gmail.com">root</maintainer>
+  <maintainer email="wngfra@gmail.com">wngfra</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

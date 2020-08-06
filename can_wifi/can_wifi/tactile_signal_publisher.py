@@ -25,8 +25,6 @@ Node States
 """
 
 
-
-
 class TactileSignalPublisher(Node):
     """
     A node class for tactile signal publisher.
@@ -85,8 +83,11 @@ class TactileSignalPublisher(Node):
                 msg.header.frame_id = 'world'
                 msg.header.stamp = self.get_clock().now().to_msg()
                 try:
+                    data = np.array(values, dtype=np.int32) - self.__reference_value.astype(np.int32)
+                    data[np.abs(data) < 8] = 0.0
+
                     msg.addr = addr[0] + ":" + str(addr[1])
-                    msg.data = np.array(values, dtype=np.int32) - self.__reference_value.astype(np.int32)
+                    msg.data = data
                     self.__publisher.publish(msg)
                 except Exception as error:
                     self.get_logger().error(str(error))
@@ -106,7 +107,8 @@ class TactileSignalPublisher(Node):
                     response.success = True
                     response.info = "OK"
 
-                    self.get_logger().info("Changed to state: {}".format(_STATE_LIST[self.__state]))
+                    self.get_logger().info(
+                        "Changed to state: {}".format(_STATE_LIST[self.__state]))
                 else:
                     raise Exception("Undefined state")
             except Exception as error:
@@ -119,7 +121,8 @@ class TactileSignalPublisher(Node):
             response.success = True
             response.info = "No transition needed!"
 
-            self.get_logger().info("In state: {}".format(_STATE_LIST[self.__state]))
+            self.get_logger().info(
+                "In state: {}".format(_STATE_LIST[self.__state]))
 
         return response
 
@@ -128,7 +131,7 @@ def main(args=None):
     rclpy.init(args=args)
     pub = TactileSignalPublisher()
     rclpy.spin(pub)
-    ub.destroy_node()
+    rclpy.destroy_node()
     rclpy.shutdown()
 
 
