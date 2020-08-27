@@ -12,6 +12,10 @@ from tactile_msgs.msg import TactileSignal
 from tactile_msgs.srv import ChangeState
 
 
+THRESHOLD_MU = 1
+THRESHOLD_SIGMA = 1
+
+
 _STATE_LIST = {
     0: 'calibration',
     1: 'recording'
@@ -84,7 +88,9 @@ class TactileSignalPublisher(Node):
                 msg.header.stamp = self.get_clock().now().to_msg()
                 try:
                     data = np.array(values, dtype=np.int32) - self.__reference_value.astype(np.int32)
-                    data[np.abs(data) < 8] = 0.0
+                    data[data <= 3] = 0.0
+                    if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
+                        data.fill(0)
 
                     msg.addr = addr[0] + ":" + str(addr[1])
                     msg.data = data
