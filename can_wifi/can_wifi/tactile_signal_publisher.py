@@ -3,6 +3,7 @@
 
 from collections import deque
 import socket
+import sys
 
 import numpy as np
 import rclpy
@@ -16,9 +17,10 @@ THRESHOLD_MU = 1
 THRESHOLD_SIGMA = 1
 
 
-_STATE_LIST = {
-    0: 'calibration',
-    1: 'recording'
+STATE_LIST = {
+    0:  'calibration',
+    1:  'recording',
+    99: 'termination'
 }
 """
 _STATE_LIST lists available node states.
@@ -103,18 +105,21 @@ class TactileSignalPublisher(Node):
         elif self.__state == 0:  # Calibration state
             if len(values) == 16:
                 self.__calibration_queue.append(values)
+        elif self.__state == 99:
+            self.get_logger().warn("Tactile publisher terminated.")
+            sys.exit()
 
     def change___statecallback(self, request, response):
         if request.transition != self.__state:
             try:
-                if request.transition in _STATE_LIST.keys():
+                if request.transition in STATE_LIST.keys():
                     self.__state = request.transition
 
                     response.success = True
                     response.info = "OK"
 
                     self.get_logger().info(
-                        "Changed to state: {}".format(_STATE_LIST[self.__state]))
+                        "Changed to state: {}".format(STATE_LIST[self.__state]))
                 else:
                     raise Exception("Undefined state")
             except Exception as error:
@@ -128,7 +133,7 @@ class TactileSignalPublisher(Node):
             response.info = "No transition needed!"
 
             self.get_logger().info(
-                "In state: {}".format(_STATE_LIST[self.__state]))
+                "In state: {}".format(STATE_LIST[self.__state]))
 
         return response
 
