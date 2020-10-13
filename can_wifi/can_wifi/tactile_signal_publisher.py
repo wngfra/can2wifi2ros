@@ -9,8 +9,8 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 
-from tactile_msgs.msg import TactileSignal
-from tactile_msgs.srv import ChangeState
+from tactile_interfaces.msg import TactileSignal
+from tactile_interfaces.srv import ChangeState
 
 
 THRESHOLD_MU = 1
@@ -89,7 +89,8 @@ class TactileSignalPublisher(Node):
                 msg.header.frame_id = 'world'
                 msg.header.stamp = self.get_clock().now().to_msg()
                 try:
-                    data = np.array(values, dtype=np.int32) - self.__reference_value.astype(np.int32)
+                    data = np.array(values, dtype=np.int32) - \
+                        self.__reference_value.astype(np.int32)
                     data[data <= 3] = 0.0
                     if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
                         data.fill(0)
@@ -107,7 +108,7 @@ class TactileSignalPublisher(Node):
                 self.__calibration_queue.append(values)
         elif self.__state == 99:
             self.get_logger().warn("Tactile publisher terminated.")
-            sys.exit()
+            self.destroy_node()
 
     def change___statecallback(self, request, response):
         if request.transition != self.__state:
@@ -142,7 +143,6 @@ def main(args=None):
     rclpy.init(args=args)
     pub = TactileSignalPublisher()
     rclpy.spin(pub)
-    rclpy.destroy_node()
     rclpy.shutdown()
 
 

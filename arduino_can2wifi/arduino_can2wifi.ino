@@ -1,4 +1,4 @@
-// Copyright (c) 2020 wngfra
+  // Copyright (c) 2020 wngfra
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 
 #include <CAN.h>
@@ -34,6 +34,7 @@ unsigned char txMsg[33];
 
 void setup()
 {
+  Serial.begin(115200);
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE)
   {
