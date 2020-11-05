@@ -20,6 +20,7 @@ THRESHOLD_SIGMA = 1
 STATE_LIST = {
     0:  'calibration',
     1:  'recording',
+    50: 'standby',
     99: 'termination'
 }
 
@@ -73,7 +74,10 @@ class TactileSignalPublisher(Node):
         values = [int.from_bytes(data[i:i+2], 'big', signed=False)
                   for i in range(0, len(data), 2)]
 
-        if self.node_state == 1:  # Recording state
+        if self.node_state == 0:  # calibration state
+            if len(values) == 16:
+                self.calibration_queue.append(values)
+        elif self.node_state == 1:  # recording state
             if len(self.calibration_queue) == self.calibration_queue.maxlen:
                 self.reference_value = np.average(
                     self.calibration_queue, axis=0)
@@ -96,10 +100,9 @@ class TactileSignalPublisher(Node):
             else:
                 self.get_logger().error("Uncalibrated sensor!")
                 raise Exception("Calibration queue is not filled.")
-        elif self.node_state == 0:  # Calibration state
-            if len(values) == 16:
-                self.calibration_queue.append(values)
-        elif self.node_state == 99:
+        elif self.node_state == 50: # standby state
+            pass
+        elif self.node_state == 99: # termination state
             self.get_logger().warn("Tactile publisher terminated.")
             self.destroy_node()
 
