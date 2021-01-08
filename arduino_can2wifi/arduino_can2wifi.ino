@@ -1,4 +1,4 @@
-  // Copyright (c) 2020 wngfra
+// Copyright (c) 2020 wngfra
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 
 #include <CAN.h>
@@ -23,8 +23,6 @@ IPAddress remoteIp = IPAddress(192, 168, 0, 100);
 WiFiUDP Udp;
 
 const unsigned char CH_ORD[16] = {11, 15, 14, 12, 9, 13, 8, 10, 6, 7, 4, 5, 2, 0, 3, 1};
-
-char packetBuf[64]; //buffer to hold sensor message
 
 int rxId = 0;
 unsigned char count = 0;
@@ -64,7 +62,7 @@ void setup()
     ;
 }
 
-// Decode CAN message from bytes to int arrays
+// Decode CAN message from bytes to unsigned char arrays
 inline void bytes2int(unsigned char id)
 {
   // Read CAN buffer to local buffer

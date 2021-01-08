@@ -60,9 +60,9 @@ class TactileSignalPublisher(Node):
         self.reference_value = np.zeros(16)
 
         self.publisher = self.create_publisher(
-            TactileSignal, '/tactile_signals', 10)
+            TactileSignal, 'tactile_signals', 10)
         self.service = self.create_service(
-            ChangeState, '/tactile_publisher/change_state', self.change_node_state_callback)
+            ChangeState, 'tactile_publisher/change_state', self.change_node_state_callback)
 
         # Publisher rate 0.03s
         self.timer = self.create_timer(0.03, self.timer_callback)
@@ -74,37 +74,37 @@ class TactileSignalPublisher(Node):
         values = [int.from_bytes(data[i:i+2], 'big', signed=False)
                   for i in range(0, len(data), 2)]
 
-        if self.node_state == 0:  # calibration state
-            if len(values) == 16:
+        if len(values) == 16:
+            if self.node_state == 0:  # calibration state
                 self.calibration_queue.append(values)
-        elif self.node_state == 1:  # recording state
-            if len(self.calibration_queue) == self.calibration_queue.maxlen:
-                self.reference_value = np.average(
-                    self.calibration_queue, axis=0)
+            elif self.node_state == 1:  # recording state
+                if len(self.calibration_queue) == self.calibration_queue.maxlen:
+                    self.reference_value = np.average(
+                        self.calibration_queue, axis=0)
 
-                msg = TactileSignal()
-                msg.header.frame_id = 'world'
-                msg.header.stamp = self.get_clock().now().to_msg()
-                try:
-                    data = np.array(values, dtype=np.int32) - \
-                        self.reference_value.astype(np.int32)
-                    data[data <= 3] = 0.0
-                    if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
-                        data.fill(0)
+                    msg = TactileSignal()
+                    msg.header.frame_id = 'world'
+                    msg.header.stamp = self.get_clock().now().to_msg()
+                    try:
+                        data = np.array(values, dtype=np.int32) - \
+                            self.reference_value.astype(np.int32)
+                        data[data <= 3] = 0.0
+                        if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
+                            data.fill(0)
 
-                    msg.addr = addr[0] + ":" + str(addr[1])
-                    msg.data = data
-                    self.publisher.publish(msg)
-                except Exception as error:
-                    self.get_logger().error(str(error))
-            else:
-                self.get_logger().error("Uncalibrated sensor!")
-                raise Exception("Calibration queue is not filled.")
-        elif self.node_state == 50: # standby state
-            pass
-        elif self.node_state == 99: # termination state
-            self.get_logger().warn("Tactile publisher terminated.")
-            self.destroy_node()
+                        msg.addr = addr[0] + ":" + str(addr[1])
+                        msg.data = data
+                        self.publisher.publish(msg)
+                    except Exception as error:
+                        self.get_logger().error(str(error))
+                else:
+                    self.get_logger().error("Uncalibrated sensor!")
+                    raise Exception("Calibration queue is not filled.")
+            elif self.node_state == 50:  # standby state
+                pass
+            elif self.node_state == 99:  # termination state
+                self.get_logger().warn("Tactile publisher terminated.")
+                self.destroy_node()
 
     def change_node_state_callback(self, request, response):
         if request.transition != self.node_state:
@@ -125,12 +125,6 @@ class TactileSignalPublisher(Node):
 
                 self.get_logger().error("Wrong transition! Reverting to state: calibration")
                 self.node_state = 0
-        else:
-            response.success = True
-            response.info = "No transition needed!"
-
-            self.get_logger().info(
-                "In state: {}".format(STATE_LIST[self.node_state]))
 
         return response
 
