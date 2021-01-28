@@ -89,11 +89,13 @@ class TactileSignalPublisher(Node):
                         data = np.array(values, dtype=np.int32) - \
                             self.reference_value.astype(np.int32)
                         data[data <= 3] = 0.0
-                        if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
+                        mean_value = np.mean(data)
+                        if mean_value <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
                             data.fill(0)
 
                         msg.addr = addr[0] + ":" + str(addr[1])
                         msg.data = data
+                        msg.mean = mean_value
                         self.publisher.publish(msg)
                     except Exception as error:
                         self.get_logger().error(str(error))
