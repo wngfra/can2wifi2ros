@@ -40,15 +40,16 @@ class TactileSignalPublisher(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
-                ('ip', "0.0.0.0"),
-                ('port', 10240),
-                ('calibration_size', 30)
+                ('ip',               "0.0.0.0"),
+                ('port',             10240),
+                ('calibration_size', 30),
+                ('mode',             None)
             ]
         )
-        ip = self.get_parameter('ip').get_parameter_value().string_value
-        port = self.get_parameter('port').get_parameter_value().integer_value
-        calibration_size = self.get_parameter(
-            'calibration_size').get_parameter_value().integer_value
+        ip = str(self.get_parameter('ip').value)
+        port = int(self.get_parameter('port').value)
+        calibration_size = int(self.get_parameter('calibration_size').value)
+        mode = str(self.get_parameter('mode').value)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
@@ -65,9 +66,15 @@ class TactileSignalPublisher(Node):
             ChangeState, 'tactile_publisher/change_state', self.change_node_state_callback)
 
         # Publisher rate 0.03s
-        self.timer = self.create_timer(0.03, self.timer_callback)
+        callback_func = self.sim_callback if mode == 'sim' else self.timer_callback
+        self.timer = self.create_timer(0.03, callback_func)
 
         self.get_logger().info('Node started in state: calibration')
+
+    def sim_callback(self):
+        msg = TactileSignal()
+        msg.header.frame_id = 'world'
+        msg.header.stamp = self.get_clock().now().to_msg()
 
     def timer_callback(self):
         data, addr = self.sock.recvfrom(1024)
