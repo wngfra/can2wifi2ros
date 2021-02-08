@@ -75,6 +75,7 @@ class TactileSignalPublisher(Node):
         msg = TactileSignal()
         msg.header.frame_id = 'world'
         msg.header.stamp = self.get_clock().now().to_msg()
+        msg.addr = 'sim'
         msg.data = np.random.randint(0, 100, size=16, dtype=np.int32)
         msg.mean = np.mean(msg.data)
         self.publisher.publish(msg)
@@ -89,7 +90,7 @@ class TactileSignalPublisher(Node):
                 self.calibration_queue.append(values)
             elif self.node_state == 1:  # recording state
                 if len(self.calibration_queue) == self.calibration_queue.maxlen:
-                    self.reference_value = np.average(
+                    self.reference_value = np.mean(
                         self.calibration_queue, axis=0)
 
                     msg = TactileSignal()
@@ -98,14 +99,12 @@ class TactileSignalPublisher(Node):
                     try:
                         data = np.array(values, dtype=np.int32) - \
                             self.reference_value.astype(np.int32)
-                        data[data <= 3] = 0.0
-                        mean_value = np.mean(data)
-                        if mean_value <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
+                        if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
                             data.fill(0)
 
                         msg.addr = addr[0] + ":" + str(addr[1])
                         msg.data = data
-                        msg.mean = mean_value
+                        msg.mean = np.mean(data)
                         self.publisher.publish(msg)
                     except Exception as error:
                         self.get_logger().error(str(error))
