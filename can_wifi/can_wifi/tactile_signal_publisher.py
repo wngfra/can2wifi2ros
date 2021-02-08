@@ -75,6 +75,9 @@ class TactileSignalPublisher(Node):
         msg = TactileSignal()
         msg.header.frame_id = 'world'
         msg.header.stamp = self.get_clock().now().to_msg()
+        msg.data = np.random.randint(0, 100, size=16, dtype=np.int32)
+        msg.mean = np.mean(msg.data)
+        self.publisher.publish(msg)
 
     def timer_callback(self):
         data, addr = self.sock.recvfrom(1024)
