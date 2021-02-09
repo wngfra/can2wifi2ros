@@ -14,7 +14,7 @@ from tactile_interfaces.srv import ChangeState
 
 
 THRESHOLD_MU = 1
-THRESHOLD_SIGMA = 1
+THRESHOLD_SIGMA = 1.0
 
 
 STATE_LIST = {
@@ -97,8 +97,8 @@ class TactileSignalPublisher(Node):
                     msg.header.frame_id = 'world'
                     msg.header.stamp = self.get_clock().now().to_msg()
                     try:
-                        data = np.array(values, dtype=np.int32) - \
-                            self.reference_value.astype(np.int32)
+                        data = np.array(values, dtype=np.int32) - self.reference_value.astype(np.int32)
+                        data[8] = 0
                         if np.mean(data) <= THRESHOLD_MU and np.var(data) >= THRESHOLD_SIGMA**2:
                             data.fill(0)
 
