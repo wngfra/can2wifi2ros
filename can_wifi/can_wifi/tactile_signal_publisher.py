@@ -44,16 +44,18 @@ class TactileSignalPublisher(Node):
         buffer_size = int(self.get_parameter("buffer_size").value)
         mode = str(self.get_parameter("mode").value)
 
+        # Open UDP socket and bind the port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
         self.mode = mode
         self.node_state = 0
 
-        # Queue of data for calibration
+        # Data buffer for calibration
         self.buffer = np.zeros((buffer_size, 16))
         self.reference_value = np.zeros(16)
         self.buffer_count = 0
 
+        # Create the publisher and service host
         self.publisher = self.create_publisher(TactileSignal, "tactile_signals", 10)
         self.service = self.create_service(
             ChangeState,
@@ -87,6 +89,8 @@ class TactileSignalPublisher(Node):
                 self.buffer[:-1] = self.buffer[1:]
                 self.buffer[-1] = values
                 self.buffer_count += 1
+
+                # Once the buffer is filled, compute the average values as reference
                 if self.buffer_count == self.buffer.shape[0]:
                     self.reference_value = np.mean(self.buffer, axis=0, dtype=np.int32)
                     self.get_logger().info("Calibration finished!")
@@ -94,6 +98,7 @@ class TactileSignalPublisher(Node):
                 if self.buffer_count < self.buffer.shape[0]:
                     self.get_logger().warn("Calibration unfinished!")
 
+                # Prepare TactileSignal message
                 msg = TactileSignal()
                 msg.addr = addr[0] + ":" + str(addr[1])
                 msg.header.frame_id = "world"
