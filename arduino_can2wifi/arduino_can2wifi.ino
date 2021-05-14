@@ -26,13 +26,13 @@ const unsigned char IND[16] = {11, 15, 14, 12, 9, 13, 8, 10, 6, 7, 4, 5, 2, 0, 3
 
 int rxId = 0;
 int packetSize;
-int rxBuf[8];
-char txMsg[33];
+unsigned char rxBuf[8];
+unsigned char txMsg[33];
 unsigned char count = 0;
 
 void setup()
 {
-  Serial.begin(115200);
+  // Serial.begin(115200);
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE)
   {
@@ -49,7 +49,6 @@ void setup()
     // wait 3 seconds for connection:
     delay(3000);
   }
-  // Serial.println("Connected to wifi");
   Udp.begin(localPort);
 
   CAN.setPins(CS_PIN, INT_PIN);
@@ -63,35 +62,39 @@ void setup()
 
 void loop()
 {
-  // try to parse packet
-  packetSize = CAN.parsePacket();
-  rxId = CAN.packetId();
-  if (rxId == 0x405) {
-    Serial.println(rxId, HEX);
-    decode(0);
-    Serial.println();
-  } else if (rxId == 0x407) {
-    Serial.println(rxId, HEX);
-    decode(4);
-    Serial.println();
-  } else if (rxId == 0x409) {
-    Serial.println(rxId, HEX);
-    decode(8);
-    Serial.println();
-  } else if (rxId == 0x40b) {
-    Serial.println(rxId, HEX);
-    decode(12);
-    Serial.println();
-  }
+  if (CAN.parsePacket() == 8) {
+    rxId = CAN.packetId();
+    if (rxId == 0x405 && count == 0) {
+      decode(0);
+      ++count;
+    } else if (rxId == 0x407 && count == 1) {
+      decode(4);
+      ++count;
+    } else if (rxId == 0x409 && count == 2) {
+      decode(8);
+      ++count;
+    } else if (rxId == 0x40b) {
+      decode(12);
+      txMsg[32] = '\0';
+      count = 0;
 
+      Udp.beginPacket(remoteIp, remotePort);
+      Udp.write((char *)txMsg);
+      Udp.endPacket();
+    }
+  }
 }
 
 // Decode CAN message from bytes
 inline void decode(unsigned char ord) {
-  for (unsigned char i = 0; i < 4; ++i) {
+  for (unsigned char i = 0; i < 8; ++i) {
     // Load CAN message to local buffer
-    // rxBuf[i] = CAN.read();
-    Serial.print(CAN.read() + 256 * CAN.read());
-    Serial.print(" ");
+    rxBuf[i] = CAN.read();
+  }
+  for (unsigned char j = 0; j < 4; ++j) {
+    // Re-arrange the data following the taxtile order
+    unsigned char ind_ = IND[ord + j];
+    txMsg[2 * ind_] = rxBuf[2 * j + 1];
+    txMsg[2 * ind_ + 1] = rxBuf[2 * j];
   }
 }
