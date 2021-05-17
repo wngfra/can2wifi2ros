@@ -11,10 +11,6 @@ from tactile_interfaces.msg import TactileSignal
 from tactile_interfaces.srv import ChangeState
 
 
-THRESHOLD_MU = 1
-THRESHOLD_SIGMA = 1.0
-
-
 STATE_LIST = {0: "calibration", 1: "recording", 50: "standby", 99: "termination"}
 
 
@@ -35,8 +31,8 @@ class TactileSignalPublisher(Node):
             parameters=[
                 ("ip", "0.0.0.0"),
                 ("port", 10240),
-                ("buffer_size", 64),
-                ("mode", None),
+                ("buffer_size", 96),
+                ("mode", "processed"),
             ],
         )
         ip = str(self.get_parameter("ip").value)
@@ -70,7 +66,9 @@ class TactileSignalPublisher(Node):
 
     def process(self, values):
         processed_ = values - self.reference_value
-        # processed_[8] = 0
+        # Fix a faulty taxel
+        processed_[8] = 0
+        processed_[8] = np.mean(processed_)
         return processed_
 
     def timer_callback(self):
@@ -82,7 +80,7 @@ class TactileSignalPublisher(Node):
             ],
             dtype=np.int32,
         )
-        self.get_logger().info("{}-byte raw data {}".format(len(data), data))
+        # self.get_logger().info("{}-byte raw data {}".format(len(data), values))
 
         try:
             if self.node_state == 0:  # calibration state
@@ -130,6 +128,10 @@ class TactileSignalPublisher(Node):
                     self.get_logger().info(
                         "Changed to state: {}".format(STATE_LIST[self.node_state])
                     )
+
+                    if self.node_state == 0:
+                        self.buffer_count = 0
+
                 else:
                     raise Exception("Undefined state")
             except Exception as error:

@@ -1,16 +1,15 @@
 // Copyright (c) 2020 wngfra
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
-
 #include <CAN.h>
-
-#define CS_PIN 3
-#define INT_PIN 7
-
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
 #include "arduino_secrets.h"
+
+#define CS_PIN 3
+#define INT_PIN 7
+
 // enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[] = SECRET_SSID; // your network SSID (name)
 char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key for WEP)
@@ -26,13 +25,15 @@ const unsigned char IND[16] = {11, 15, 14, 12, 9, 13, 8, 10, 6, 7, 4, 5, 2, 0, 3
 
 int rxId = 0;
 int packetSize;
-unsigned char rxBuf[8];
-unsigned char txMsg[33];
+byte txMsg[32];
+unsigned int i, j, k;
+unsigned char ind_;
 unsigned char count = 0;
+unsigned char rxBuf[8];
 
 void setup()
 {
-  // Serial.begin(115200);
+  Serial.begin(9600);
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE)
   {
@@ -49,6 +50,7 @@ void setup()
     // wait 3 seconds for connection:
     delay(3000);
   }
+
   Udp.begin(localPort);
 
   CAN.setPins(CS_PIN, INT_PIN);
@@ -75,11 +77,19 @@ void loop()
       ++count;
     } else if (rxId == 0x40b) {
       decode(12);
-      txMsg[32] = '\0';
       count = 0;
 
+      
+      Serial.print("Msg: ");
+      for (k = 0; k < 32; ++k) {
+        Serial.print(txMsg[k]);
+        Serial.print(" ");
+      }
+      Serial.println();
+      
+
       Udp.beginPacket(remoteIp, remotePort);
-      Udp.write((char *)txMsg);
+      Udp.write(txMsg, 32);
       Udp.endPacket();
     }
   }
@@ -87,13 +97,13 @@ void loop()
 
 // Decode CAN message from bytes
 inline void decode(unsigned char ord) {
-  for (unsigned char i = 0; i < 8; ++i) {
+  for (i = 0; i < 8; ++i) {
     // Load CAN message to local buffer
     rxBuf[i] = CAN.read();
   }
-  for (unsigned char j = 0; j < 4; ++j) {
+  for (j = 0; j < 4; ++j) {
     // Re-arrange the data following the taxtile order
-    unsigned char ind_ = IND[ord + j];
+    ind_ = IND[ord + j];
     txMsg[2 * ind_] = rxBuf[2 * j + 1];
     txMsg[2 * ind_ + 1] = rxBuf[2 * j];
   }
