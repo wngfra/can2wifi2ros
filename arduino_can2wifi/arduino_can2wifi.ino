@@ -44,6 +44,9 @@ void setup()
   // attempt to connect to Wifi network:
   while (status != WL_CONNECTED)
   {
+    
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     status = WiFi.begin(ssid, pass);
 
@@ -79,14 +82,14 @@ void loop()
       decode(12);
       count = 0;
 
-      
+      /*
       Serial.print("Msg: ");
       for (k = 0; k < 32; ++k) {
         Serial.print(txMsg[k]);
         Serial.print(" ");
       }
       Serial.println();
-      
+      */
 
       Udp.beginPacket(remoteIp, remotePort);
       Udp.write(txMsg, 32);
