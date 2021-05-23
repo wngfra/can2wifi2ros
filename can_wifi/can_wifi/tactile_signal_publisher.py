@@ -31,7 +31,7 @@ class TactileSignalPublisher(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("ip", "0.0.0.0"),
+                ("ip", "0.0.0.0"), # for container host net
                 ("port", 10240),
                 ("buffer_size", 96),
                 ("mode", "processed"),
@@ -80,13 +80,12 @@ class TactileSignalPublisher(Node):
         )
         if self.mode == "processed":
             values = self.process(values)
+        self.buffer.append(values)
         # self.get_logger().info("{}-byte raw data {}".format(len(data), values))
 
         try:
             if self.node_state == 0:  # calibration state
-                self.buffer.append(values)
-
-                # Once the buffer is filled, compute the average values as reference
+                # Once the buffer is full, compute the average values as reference
                 if len(self.buffer) == self.buffer.maxlen:
                     self.reference_value = np.mean(
                         self.buffer, axis=0, dtype=np.int32)
