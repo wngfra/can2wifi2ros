@@ -44,7 +44,7 @@ void setup()
   // attempt to connect to Wifi network:
   while (status != WL_CONNECTED)
   {
-    
+
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
@@ -83,17 +83,28 @@ void loop()
       count = 0;
 
       /*
-      Serial.print("Msg: ");
-      for (k = 0; k < 32; ++k) {
+        Serial.print("Msg: ");
+        for (k = 0; k < 32; ++k) {
         Serial.print(txMsg[k]);
         Serial.print(" ");
-      }
-      Serial.println();
+        }
+        Serial.println();
       */
 
       Udp.beginPacket(remoteIp, remotePort);
       Udp.write(txMsg, 32);
       Udp.endPacket();
+    }
+    else if (rxId == 0x601) {
+      Serial.print("ID: ");
+      Serial.print(rxId, HEX);
+      Serial.print(" Msg: ");
+      for (i = 0; i < 8; ++i) {
+        // Load CAN message to local buffer
+        Serial.print(CAN.read());
+        Serial.print(" ");
+      }
+      Serial.println();
     }
   }
 }

@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'tactile_signal_publisher = can_wifi.tactile_signal_publisher:main'
+            'tactile_signal_publisher = can_wifi.tactile_signal_publisher:main',
+            'visualizer = can_wifi.visualizer:main'
         ],
     },
 )
