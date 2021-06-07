@@ -1,2 +1,2 @@
-#define SECRET_SSID "dlink"
-#define SECRET_PASS ""
+#define SECRET_SSID "TP-Link_8267"
+#define SECRET_PASS "35682318"
