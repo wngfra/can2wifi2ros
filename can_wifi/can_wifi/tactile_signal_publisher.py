@@ -34,18 +34,15 @@ class TactileSignalPublisher(Node):
                 ("ip", "0.0.0.0"), # for container host net
                 ("port", 10240),
                 ("buffer_size", 96),
-                ("mode", "processed"),
             ],
         )
         ip = str(self.get_parameter("ip").value)
         port = int(self.get_parameter("port").value)
         buffer_size = int(self.get_parameter("buffer_size").value)
-        mode = str(self.get_parameter("mode").value)
 
         # Open UDP socket and bind the port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
-        self.mode = mode
         self.node_state = 0
 
         # Data buffer for calibration
@@ -66,11 +63,6 @@ class TactileSignalPublisher(Node):
 
         # self.get_logger().info("Node started in state: calibration")
 
-    def process(self, values):
-        processed_ = values - self.reference_value
-        # processed_[processed_ < 0] = 0
-        return processed_
-
     def timer_callback(self):
         data, addr = self.sock.recvfrom(256)
         values = np.array(
@@ -78,13 +70,10 @@ class TactileSignalPublisher(Node):
              for i in range(0, len(data), 2)],
             dtype=np.int32,
         )
-        if self.mode == "processed":
-            values = self.process(values)
-        self.buffer.append(values)
-        # self.get_logger().info("{}-byte raw data {}".format(len(data), values))
 
         try:
             if self.node_state == 0:  # calibration state
+                self.buffer.append(values)
                 # Once the buffer is full, compute the average values as reference
                 if len(self.buffer) == self.buffer.maxlen:
                     self.reference_value = np.mean(
@@ -94,6 +83,7 @@ class TactileSignalPublisher(Node):
             elif self.node_state == 1:  # recording state
                 if len(self.buffer) < self.buffer.maxlen:
                     self.get_logger().warn("Calibration unfinished!")
+                values -= self.reference_value
 
                 # Prepare TactileSignal message
                 msg = TactileSignal()

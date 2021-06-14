@@ -45,8 +45,6 @@ CAN.filter(0x400, 0x7f0);
   }
 
   Udp.begin(localPort);
-
-  
 }
 
 void loop()
