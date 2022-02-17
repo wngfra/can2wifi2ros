@@ -1,7 +1,7 @@
 # Copyright (c) 2020 wngfra
 # Use of this source code is governed by the Apache-2.0 license, see LICENSE
 
-import socket
+import serial
 from collections import deque
 
 import numpy as np
@@ -31,18 +31,17 @@ class TactileSignalPublisher(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("ip", "0.0.0.0"), # for container host net
-                ("port", 10240),
+                ("port", "/dev/ttyACM0"),
                 ("buffer_size", 96),
             ],
         )
-        ip = str(self.get_parameter("ip").value)
-        port = int(self.get_parameter("port").value)
+
+        self.port = str(self.get_parameter("port").value)
         buffer_size = int(self.get_parameter("buffer_size").value)
 
-        # Open UDP socket and bind the port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((ip, port))
+        # Open serial port
+        self.serial = serial.Serial(self.port, 1152000, timeout=0, rtscts=1)
+        self.serial.open()
         self.node_state = 0
 
         # Data buffer for calibration
@@ -64,16 +63,16 @@ class TactileSignalPublisher(Node):
         # self.get_logger().info("Node started in state: calibration")
 
     def timer_callback(self):
-        data, addr = self.sock.recvfrom(256)
-        values = np.array(
-            [int.from_bytes(data[i: i + 2], "big")
-             for i in range(0, len(data), 2)],
+        s = self.serial.read(32)
+        vals = np.array(
+            [int.from_bytes(s[i: i + 2], "big")
+             for i in range(0, len(s), 2)],
             dtype=np.int32,
         )
 
         try:
             if self.node_state == 0:  # calibration state
-                self.buffer.append(values)
+                self.buffer.append(vals)
                 # Once the buffer is full, compute the average values as reference
                 if len(self.buffer) == self.buffer.maxlen:
                     self.reference_value = np.mean(
@@ -83,20 +82,21 @@ class TactileSignalPublisher(Node):
             elif self.node_state == 1:  # recording state
                 if len(self.buffer) < self.buffer.maxlen:
                     self.get_logger().warn("Calibration unfinished!")
-                values -= self.reference_value
+                vals -= self.reference_value
 
                 # Prepare TactileSignal message
                 msg = TactileSignal()
-                msg.addr = addr[0] + ":" + str(addr[1])
+                msg.addr = self.port
                 msg.header.frame_id = "world"
                 msg.header.stamp = self.get_clock().now().to_msg()
-                msg.data = values
-                msg.mean = np.mean(values)
+                msg.data = vals
+                msg.mean = np.mean(vals)
                 self.publisher.publish(msg)
             elif self.node_state == 50:  # standby state
                 pass
             elif self.node_state == 99:  # termination state
                 self.get_logger().warn("Tactile publisher terminated.")
+                self.serial.close()
                 self.destroy_node()
         except Exception as error:
             self.get_logger().error(str(error))

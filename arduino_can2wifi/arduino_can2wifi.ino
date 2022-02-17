@@ -1,23 +1,8 @@
 // Copyright (c) 2020 wngfra
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 #include <MCP2515.h>
-#include <WiFi.h>
-#include <WiFiUdp.h>
-
-#include "arduino_secrets.h"
 
 const unsigned char ID_TABLE[16] = {11, 15, 14, 12, 9, 13, 8, 10, 6, 7, 4, 5, 2, 0, 3, 1};
-
-// Enter your sensitive data in arduino_secrets.h
-char ssid[] = SECRET_SSID; // your network SSID (name)
-char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key for WEP)
-
-int status = WL_IDLE_STATUS;
-unsigned int localPort = 2390; // local port to listen on
-unsigned int remotePort = 10240;
-IPAddress remoteIp = IPAddress(192, 168, 0, 100);
-
-WiFiUDP Udp;
 
 int rxId = 0;
 byte txMsg[32];
@@ -33,18 +18,7 @@ CAN.filter(0x400, 0x7f0);
   // Start the CAN bus at 1 Mbps
   while (!CAN.begin(1000E3))
     ;
-
-  // attempt to connect to Wifi network:
-  while (status != WL_CONNECTED)
-  {
-    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-    status = WiFi.begin(ssid, pass);
-
-    // wait 3 seconds for connection:
-    delay(3000);
-  }
-
-  Udp.begin(localPort);
+  Serial.begin(1152000);
 }
 
 void loop()
@@ -64,9 +38,7 @@ void loop()
       decode(12);
       count = 0;
 
-      Udp.beginPacket(remoteIp, remotePort);
-      Udp.write(txMsg, 32);
-      Udp.endPacket();
+      Serial.write(txMsg, 32);
     }
   }
 }
