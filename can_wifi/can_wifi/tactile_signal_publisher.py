@@ -5,6 +5,7 @@ import serial
 from collections import deque
 
 import numpy as np
+import scipy.signal as signal
 import rclpy
 from rclpy.node import Node
 
@@ -15,6 +16,13 @@ from tactile_interfaces.srv import ChangeState
 STATE_LIST = {0: "calibration", 1: "recording",
               50: "standby", 99: "termination"}
 
+
+def butter_lowpass_filter(data, cutoff, order):
+    normal_cutoff = cutoff / 32.0
+    # Get the filter coefficients 
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+    y = signal.filtfilt(b, a, data)
+    return y    
 
 class TactileSignalPublisher(Node):
     """
@@ -41,7 +49,8 @@ class TactileSignalPublisher(Node):
 
         # Open serial port
         self.serial = serial.Serial(self.port, 1152000, timeout=0, rtscts=1)
-        self.serial.open()
+        if not self.serial.isOpen():
+            self.serial.open()
         self.node_state = 0
 
         # Data buffer for calibration
@@ -66,34 +75,36 @@ class TactileSignalPublisher(Node):
         s = self.serial.read(32)
         vals = np.array(
             [int.from_bytes(s[i: i + 2], "big")
-             for i in range(0, len(s), 2)],
-            dtype=np.int32,
-        )
+             for i in range(0, len(s), 2)])
 
         try:
             if self.node_state == 0:  # calibration state
                 self.buffer.append(vals)
                 # Once the buffer is full, compute the average values as reference
                 if len(self.buffer) == self.buffer.maxlen:
-                    self.reference_value = np.mean(
-                        self.buffer, axis=0, dtype=np.int32)
+                    self.reference_value = np.mean(self.buffer, axis=0)
                     self.node_state = 1  # Change to recording state
                     self.get_logger().info("Calibration finished!")
+
             elif self.node_state == 1:  # recording state
                 if len(self.buffer) < self.buffer.maxlen:
                     self.get_logger().warn("Calibration unfinished!")
-                vals -= self.reference_value
+                vals = vals - self.reference_value
+
+                filtered_vals = np.array(butter_lowpass_filter(vals, 20, 2), dtype=np.int32)
 
                 # Prepare TactileSignal message
                 msg = TactileSignal()
                 msg.addr = self.port
                 msg.header.frame_id = "world"
                 msg.header.stamp = self.get_clock().now().to_msg()
-                msg.data = vals
+                msg.data = filtered_vals
                 msg.mean = np.mean(vals)
                 self.publisher.publish(msg)
+
             elif self.node_state == 50:  # standby state
                 pass
+
             elif self.node_state == 99:  # termination state
                 self.get_logger().warn("Tactile publisher terminated.")
                 self.serial.close()
